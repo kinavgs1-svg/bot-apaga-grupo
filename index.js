@@ -1,3 +1,4 @@
+try{require('child_process').execSync('npx puppeteer browsers install chrome@127.0.6533.88',{stdio:'inherit'})}catch(e){}
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const puppeteer = require('puppeteer');
