@@ -1,0 +1,51 @@
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+});
+
+client.on('qr', qr => qrcode.generate(qr, {small: true}));
+client.on('ready', () => console.log('BOT ANTI-VENDA TIBIA ONLINE!'));
+
+// O QUE O BOT VAI APAGAR - Frase completa
+function ehVendaProibida(texto) {
+    const t = texto.toLowerCase();
+
+    const frasesProibidas = [
+        'vendo itens', 'vendo item',
+        'vendo kks', 'vendo kk', 'vendo k',
+        'vendo char', 'vendo conta',
+        'vendo gold', 'vendo gp',
+        'vendo auroria', 'itens auroria',
+        'vendo ek', 'vendo ed', 'vendo rp', 'vendo ms',
+        'vendo kina', 'vendo mage'
+    ];
+
+    // Verifica se a frase contém alguma proibida
+    return frasesProibidas.some(frase => t.includes(frase));
+}
+
+client.on('message', async msg => {
+    const chat = await msg.getChat();
+    if (!chat.isGroup || msg.fromMe) return;
+
+    if (ehVendaProibida(msg.body)) {
+        try {
+            await msg.delete(true);
+            const autor = msg.author || msg.from;
+            
+            // Apaga e já avisa
+            await chat.sendMessage(`🚫 Venda proibida apagada de @${autor.split('@')[0]}! Aqui não pode vender char/kks/itens.`, {
+                mentions: [autor]
+            });
+            
+            console.log(`APAGADO: ${msg.body}`);
+        } catch (e) {
+            console.log('Preciso ser ADM do grupo pra apagar!');
+        }
+    }
+});
+
+client.initialize();
