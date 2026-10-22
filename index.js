@@ -1,31 +1,43 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const puppeteer = require('puppeteer');
+
+console.log('Iniciando...');
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] }
-});
-
-client.on('qr', qr => qrcode.generate(qr, {small: true}));
-client.on('ready', () => console.log('BOT ANTI-VENDA TIBIA ONLINE!'));
-
-function ehVendaProibida(texto) {
-    const t = texto.toLowerCase();
-    // Pega até com erro de digitação: vendo, verndo, vedno
-    const regexVenda = /(v[e3]r?n?d[oa]|vend[oa]).*(itens|item|kks?|char|conta|gold|gp|auroria|ek|ed|rp|ms|kina|mage)/i;
-    return regexVenda.test(t);
-}
-
-client.on('message', async msg => {
-    const chat = await msg.getChat();
-    if (!chat.isGroup || msg.fromMe) return;
-
-    if (ehVendaProibida(msg.body)) {
-        try {
-            await msg.delete(true);
-            const autor = msg.author || msg.from;
-            await chat.sendMessage(`🚫 Venda apagada de @${autor.split('@')[0]}! Proibido vender char/kks/itens aqui.`, { mentions: [autor] });
-        } catch (e) { console.log('Preciso ser ADM!'); }
+    puppeteer: {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        executablePath: puppeteer.executablePath()
     }
 });
+
+client.on('qr', qr => {
+    console.log('QR CODE GERADO! ESCANEIE:');
+    qrcode.generate(qr, {small: true});
+});
+
+client.on('ready', () => {
+    console.log('✅ BOT CONECTADO! Pronto pra apagar grupos');
+});
+
+client.on('message', async msg => {
+    if (msg.body === '!apagartudo' || msg.body === '!apagar') {
+        try {
+            const chats = await client.getChats();
+            for (let chat of chats) {
+                if (chat.isGroup) {
+                    await chat.clearMessages();
+                    console.log(`Apagado: ${chat.name}`);
+                }
+            }
+            msg.reply('✅ Todos os grupos limpos!');
+        } catch (e) {
+            console.log(e);
+            msg.reply('Erro: ' + e.message);
+        }
+    }
+});
+
 client.initialize();
